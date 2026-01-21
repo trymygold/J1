@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JEWELS-AI | Tamil Edition</title>
+  <title>JEWELS-AI | Premium AR</title>
   
   <link rel="stylesheet" href="style.css" />
 
@@ -13,6 +13,53 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    /* Toast Notification Style for "Action Disabled" */
+    #toast-notification {
+      visibility: hidden;
+      min-width: 250px;
+      background-color: #333;
+      color: #d4af37; /* Gold color */
+      text-align: center;
+      border-radius: 4px;
+      padding: 16px;
+      position: fixed;
+      z-index: 9999;
+      left: 50%;
+      bottom: 30px;
+      transform: translateX(-50%);
+      font-size: 17px;
+      font-family: 'Montserrat', sans-serif;
+      border: 1px solid #d4af37;
+    }
+
+    #toast-notification.show {
+      visibility: visible;
+      -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+
+    @-webkit-keyframes fadein {
+      from {bottom: 0; opacity: 0;} 
+      to {bottom: 30px; opacity: 1;}
+    }
+
+    @keyframes fadein {
+      from {bottom: 0; opacity: 0;}
+      to {bottom: 30px; opacity: 1;}
+    }
+
+    @-webkit-keyframes fadeout {
+      from {bottom: 30px; opacity: 1;} 
+      to {bottom: 0; opacity: 0;}
+    }
+
+    @keyframes fadeout {
+      from {bottom: 30px; opacity: 1;}
+      to {bottom: 0; opacity: 0;}
+    }
+  </style>
 </head>
 <body>
   <div id="app">
@@ -32,36 +79,33 @@
           <img src="logo.png" alt="Jewels-ai Logo" class="brand-logo" />
         </div>
         <div class="action-row">
-          <button id="lang-btn" onclick="toggleLanguage()" title="Switch Language">🇺🇸</button>
-          
           <button id="voice-btn" onclick="toggleVoiceControl()" title="Toggle Voice Control">🎙️</button>
           <button id="snapshot-btn" onclick="takeSnapshot()" title="Take Photo">📷</button>
         </div>
       </div>
 
       <div class="controls-panel">
+        
         <button id="tryall-btn" class="pill accent" onclick="toggleTryAll()">Try All</button>
+
         <div id="jewelry-mode" class="pill-group">
           <button class="pill" onclick="selectJewelryType('earrings')">Earrings</button>
           <button class="pill" onclick="selectJewelryType('chains')">Chains</button>
           <button class="pill" onclick="selectJewelryType('rings')">Rings</button>
           <button class="pill" onclick="selectJewelryType('bangles')">Bangles</button>
-        </div>
+          </div>
+        
         <div id="jewelry-options" class="carousel-cards" style="display:none;"></div>
       </div>
     </header>
 
-    <div id="ai-concierge-container">
-        <div id="ai-bubble">Tap to wake Nila</div>
-        <div id="ai-avatar" onclick="toggleConciergeMute()">
-            <div class="avatar-ring"></div>
-            <div class="avatar-face">🤖</div> 
-        </div>
-    </div>
-
     <div id="preview-modal">
         <span class="close-preview" onclick="closePreview()">&times;</span>
-        <div class="preview-container"><img id="preview-image" src="" alt="Captured Look"></div>
+        
+        <div class="preview-container">
+            <img id="preview-image" src="" alt="Captured Look">
+        </div>
+
         <div class="preview-actions">
             <button class="pill accent" onclick="downloadSingleSnapshot()">Download</button>
             <button class="pill" onclick="shareSingleSnapshot()">Share</button>
@@ -71,16 +115,79 @@
     <div id="gallery-modal">
       <div class="gallery-content">
         <span class="close-gallery" onclick="closeGallery()">&times;</span>
-        <h2 style="color:#d4af37; font-family:'Playfair Display'; margin-top:0;">Your Collection</h2>
+        <h2 style="color:#d4af37; font-family:'Playfair Display';">Your Collection</h2>
+        
         <div id="gallery-grid"></div>
+        
         <div style="margin-top:20px;">
-          <button class="pill accent" onclick="downloadAllAsZip()">Download All (ZIP)</button>
+          <button class="pill accent" onclick="downloadAllAsZip()">Download ZIP</button>
         </div>
       </div>
     </div>
 
+    <div id="lightbox-overlay">
+        <span class="close-lightbox" onclick="closeLightbox()">&times;</span>
+        
+        <div class="lightbox-nav prev" onclick="changeLightboxImage(-1)">&#10094;</div>
+        <div class="lightbox-nav next" onclick="changeLightboxImage(1)">&#10095;</div>
+
+        <div class="lightbox-main">
+            <img id="lightbox-image" src="" alt="Zoomed View">
+        </div>
+    </div>
+
+    <div id="whatsapp-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 style="color:#d4af37; font-family:'Playfair Display';">Save Your Vibe</h2>
+            <p style="color:#ccc;">Enter WhatsApp number to download images and get exclusive offers.</p>
+            
+            <input type="tel" id="user-phone" placeholder="+91 7019743880" class="input-dark">
+            
+            <button class="pill accent" onclick="confirmWhatsAppDownload()">Send & Download</button>
+            <button onclick="closeWhatsAppModal()" class="btn-text">Cancel</button>
+        </div>
+    </div>
+
+    <div id="process-overlay">
+        <div class="process-box">
+            <div class="spinner"></div>
+            <p id="process-text" style="color:white; margin-top:10px;">Processing...</p>
+        </div>
+    </div>
+
+    <div id="toast-notification">Action Disabled</div>
+
   </div>
 
   <script src="script.js"></script>
+
+  <script>
+    // Helper function to show the toast
+    function showToast(message) {
+      var x = document.getElementById("toast-notification");
+      x.innerText = message;
+      x.className = "show";
+      setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+    }
+
+    // Disable Right Click
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // Block common DevTools shortcuts
+    document.addEventListener('keydown', function(e) {
+      // Check for Ctrl or Cmd key
+      const meta = e.ctrlKey || e.metaKey; 
+      
+      // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
+      if (
+        e.key === "F12" ||
+        (meta && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C")) ||
+        (meta && e.key === "u") // view-source
+      ) {
+        e.preventDefault();
+        showToast("Action Disabled");
+      }
+    });
+  </script>
 </body>
 </html>
